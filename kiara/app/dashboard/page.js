@@ -1,3 +1,5 @@
+"use client";
+
 const lists = [
     'Daily Routine',
     'University Tasks',

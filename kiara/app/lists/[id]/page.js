@@ -1,3 +1,5 @@
+"use client";
+
 const tasks = [
     'Dar comida ao gato',
     'Organizar a casa',
