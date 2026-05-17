@@ -1,75 +1,199 @@
-"use client";
+"use client"
 
-const tasks = [
-    'Dar comida ao gato',
-    'Organizar a casa',
-    'Lavar o carro',
-    'Tomar banho',
-    'Jogar videogame',
-]
+import { useEffect, useState } from "react"
 
-export default function ListDetailsPage() {
+import { api } from "../../../services/api"
+
+export default function ListPage({ params }) {
+
+    const listId = params.id
+
+    const [tasks, setTasks] = useState([])
+
+    const [taskText, setTaskText] = useState("")
+
+    const [editingId, setEditingId] = useState(null)
+
+    const [editingText, setEditingText] = useState("")
+
+    async function loadTasks() {
+
+        const data = await api(`/tasks/${listId}`)
+
+        setTasks(data)
+    }
+
+    async function createTask() {
+
+        if (!taskText) return
+
+        await api("/tasks", {
+            method: "POST",
+            body: JSON.stringify({
+                originalText: taskText,
+                listId,
+            }),
+        })
+
+        setTaskText("")
+
+        loadTasks()
+    }
+
+    async function toggleTask(id) {
+
+        await api(`/tasks/${id}/toggle`, {
+            method: "PATCH",
+        })
+
+        loadTasks()
+    }
+
+    async function deleteTask(id) {
+
+        await api(`/tasks/${id}`, {
+            method: "DELETE",
+        })
+
+        loadTasks()
+    }
+
+    async function updateTask(id) {
+
+        await api(`/tasks/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+                originalText: editingText,
+            }),
+        })
+
+        setEditingId(null)
+
+        loadTasks()
+    }
+
+    useEffect(() => {
+        loadTasks()
+    }, [])
+
     return (
         <main className="min-h-screen bg-zinc-950 text-white p-6 md:p-10">
+
             <div className="max-w-5xl mx-auto space-y-8">
 
                 <div>
                     <h1 className="text-5xl font-bold">
-                        Daily Routine
+                        Tarefas
                     </h1>
-
-                    <p className="text-zinc-400 mt-2">
-                        AI-organized tasks.
-                    </p>
                 </div>
 
-                <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-5">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4">
 
-                    <div>
-                        <h2 className="text-2xl font-semibold">
-                            Brain Dump
-                        </h2> <p className="text-zinc-400 mt-1">
-                            Write naturally and let Kiara organize it.
-                        </p>
-                    </div>
-
-                    <textarea
-                        defaultValue="lavar o carro, tomar banho, jogar video game, organizar a casa e comida ao gato"
-                        className="w-full h-40 rounded-2xl bg-zinc-800 border border-zinc-700 p-4 resize-none outline-none"
+                    <input
+                        type="text"
+                        placeholder="Nova Tarefa"
+                        value={taskText}
+                        onChange={(e) => setTaskText(e.target.value)}
+                        className="w-full rounded-2xl bg-zinc-800 border border-zinc-700 px-5 py-4 outline-none"
                     />
 
-                    <button className="bg-white text-black px-6 py-4 rounded-2xl font-semibold">
-                        Organize with AI
+                    <button
+                        onClick={createTask}
+                        className="bg-white text-black px-6 py-4 rounded-2xl font-semibold"
+                    >
+                        Add Tarefa
                     </button>
-                </section>
 
-                <section className="space-y-4">
-                    {tasks.map((task, index) => (
+                </div>
+
+                <div className="space-y-4">
+
+                    {tasks.map((task) => (
+
                         <div
-                            key={task}
-                            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between"
+                            key={task.id}
+                            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6"
                         >
-                            <div className="flex items-center gap-4">
 
-                                <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center font-bold">
-                                    {index + 1}
+                            {editingId === task.id ? (
+
+                                <div className="space-y-4">
+
+                                    <input
+                                        type="text"
+                                        value={editingText}
+                                        onChange={(e) => setEditingText(e.target.value)}
+                                        className="w-full rounded-2xl bg-zinc-800 border border-zinc-700 px-5 py-4 outline-none"
+                                    />
+
+                                    <button
+                                        onClick={() => updateTask(task.id)}
+                                        className="bg-white text-black px-5 py-3 rounded-2xl"
+                                    >
+                                        Salvar
+                                    </button>
+
                                 </div>
 
-                                <div>
-                                    <h3 className="text-lg font-medium">
-                                        {task}
-                                    </h3>
+                            ) : (
 
-                                    <p className="text-zinc-400 text-sm mt-1">
-                                        Estimated time: {10 + index * 5} minutes
-                                    </p>
+                                <div className="space-y-4">
+
+                                    <div className="flex items-center justify-between">
+
+                                        <h2
+                                            className={`text-2xl font-semibold ${task.completed
+                                                ? "line-through text-zinc-500"
+                                                : ""
+                                                }`}
+                                        >
+                                            {task.originalText}
+                                        </h2>
+
+                                        <button
+                                            onClick={() => toggleTask(task.id)}
+                                            className={`px-5 py-3 rounded-2xl ${task.completed
+                                                ? "bg-green-500"
+                                                : "bg-zinc-800"
+                                                }`}
+                                        >
+                                            {task.completed
+                                                ? "Completed"
+                                                : "Pending"}
+                                        </button>
+
+                                    </div>
+
+                                    <div className="flex gap-4">
+
+                                        <button
+                                            onClick={() => {
+                                                setEditingId(task.id)
+                                                setEditingText(task.originalText)
+                                            }}
+                                            className="bg-zinc-800 px-5 py-3 rounded-2xl"
+                                        >
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            onClick={() => deleteTask(task.id)}
+                                            className="bg-red-500 px-5 py-3 rounded-2xl"
+                                        >
+                                            Excluir
+                                        </button>
+
+                                    </div>
+
                                 </div>
-                            </div>
 
-                            <input type="checkbox" className="w-5 h-5" />
+                            )}
+
                         </div>
+
                     ))}
-                </section>
+
+                </div>
             </div>
         </main>
     )

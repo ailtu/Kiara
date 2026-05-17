@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link"
 import Image from "next/image"
 
 export default function HomePage() {
@@ -24,9 +25,13 @@ export default function HomePage() {
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-4">
 
-          <button className="bg-white text-black px-8 py-4 rounded-2xl font-semibold w-full md:w-auto">
-            Inicie
-          </button>
+          <Link href="/login">
+
+            <button className="bg-white text-black px-8 py-4 rounded-2xl font-semibold hover:scale-105 transition">
+              Iniciar
+            </button>
+
+          </Link>
 
         </div>
       </div>
