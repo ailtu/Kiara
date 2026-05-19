@@ -44,3 +44,4 @@ next-env.d.ts
 .next
 .env
 backend/.env
+/app/generated/prisma

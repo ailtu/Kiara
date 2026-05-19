@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3333"
+/* const API_URL = "http://localhost:3333"
 
 export async function api(path, options = {}) {
   const token = localStorage.getItem("token")
@@ -11,6 +11,27 @@ export async function api(path, options = {}) {
         : "",
     },
     ...options,
+  })
+
+  return response.json()
+} */
+
+export async function api(path, options = {}) {
+
+  const token = localStorage.getItem("token")
+
+  const response = await fetch(`/api${path}`, {
+    ...options,
+
+    headers: {
+      "Content-Type": "application/json",
+
+      Authorization: token
+        ? `Bearer ${token}`
+        : "",
+
+      ...options.headers,
+    },
   })
 
   return response.json()
