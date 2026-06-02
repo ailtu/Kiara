@@ -1,6 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+
+// import { use } from "react"
 import { api } from "../../../services/api"
 
 const PRIORITY_LABEL = { 1: "Alta", 2: "Média", 3: "Baixa" }
@@ -20,7 +23,10 @@ const CATEGORY_COLOR = {
 
 export default function ListPage({ params }) {
 
-  const listId = params.id
+  //const resolvedParams = use(params)
+  //const listId = resolvedParams.id
+
+  const { id: listId } = useParams()
 
   const [tasks, setTasks] = useState([])
   const [taskText, setTaskText] = useState("")
