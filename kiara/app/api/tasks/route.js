@@ -1,5 +1,4 @@
 import { prisma } from "../../../lib/prisma"
-
 import { NextResponse } from "next/server"
 
 export async function POST(request) {
@@ -11,6 +10,9 @@ export async function POST(request) {
     const task = await prisma.task.create({
       data: {
         originalText: body.originalText,
+        normalizedText: body.normalizedText ?? null,
+        priority: body.priority ?? null,
+        estimatedMinutes: body.estimatedMinutes ?? null,
         listId: body.listId,
       },
     })
