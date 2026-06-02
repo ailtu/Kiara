@@ -10,27 +10,27 @@ const PRIORITY_COLOR = {
   3: "bg-zinc-700 text-zinc-400 border border-zinc-600",
 }
 const CATEGORY_COLOR = {
-  estudo:     "bg-blue-500/20 text-blue-400",
-  trabalho:   "bg-purple-500/20 text-purple-400",
-  pessoal:    "bg-pink-500/20 text-pink-400",
-  saude:      "bg-green-500/20 text-green-400",
+  estudo: "bg-blue-500/20 text-blue-400",
+  trabalho: "bg-purple-500/20 text-purple-400",
+  pessoal: "bg-pink-500/20 text-pink-400",
+  saude: "bg-green-500/20 text-green-400",
   financeiro: "bg-orange-500/20 text-orange-400",
-  outro:      "bg-zinc-700 text-zinc-400",
+  outro: "bg-zinc-700 text-zinc-400",
 }
 
 export default function ListPage({ params }) {
 
   const listId = params.id
 
-  const [tasks, setTasks]           = useState([])
-  const [taskText, setTaskText]     = useState("")
-  const [editingId, setEditingId]   = useState(null)
+  const [tasks, setTasks] = useState([])
+  const [taskText, setTaskText] = useState("")
+  const [editingId, setEditingId] = useState(null)
   const [editingText, setEditingText] = useState("")
 
-  const [aiText, setAiText]         = useState("")
-  const [aiLoading, setAiLoading]   = useState(false)
-  const [aiPreview, setAiPreview]   = useState(null)
-  const [aiMode, setAiMode]         = useState(false)
+  const [aiText, setAiText] = useState("")
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiPreview, setAiPreview] = useState(null)
+  const [aiMode, setAiMode] = useState(false)
 
   async function loadTasks() {
     const data = await api(`/tasks/${listId}`)
@@ -94,10 +94,10 @@ export default function ListPage({ params }) {
       await api("/tasks", {
         method: "POST",
         body: JSON.stringify({
-          originalText:     task.originalText,
-          normalizedText:   task.normalizedText,
+          originalText: task.originalText,
+          normalizedText: task.normalizedText,
           listId,
-          priority:         task.priority,
+          priority: task.priority,
           estimatedMinutes: task.estimatedMinutes,
         }),
       })
@@ -119,9 +119,8 @@ export default function ListPage({ params }) {
           <h1 className="text-5xl font-bold">Tarefas</h1>
           <button
             onClick={() => { setAiMode(!aiMode); setAiPreview(null) }}
-            className={`px-5 py-3 rounded-2xl font-semibold transition ${
-              aiMode ? "bg-violet-600 text-white" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-            }`}
+            className={`px-5 py-3 rounded-2xl font-semibold transition ${aiMode ? "bg-violet-600 text-white" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+              }`}
           >
             ✦ Organizar com IA
           </button>
