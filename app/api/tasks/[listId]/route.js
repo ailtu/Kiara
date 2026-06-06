@@ -17,3 +17,36 @@ export async function GET(request, { params }) {
 
   return NextResponse.json(tasks)
 }
+
+export async function PUT(request, { params }) {
+
+  const { id } = await params
+
+  const body = await request.json()
+
+  const task = await prisma.task.update({
+    where: {
+      id,
+    },
+    data: {
+      originalText: body.originalText,
+    },
+  })
+
+  return NextResponse.json(task)
+}
+
+export async function DELETE(request, { params }) {
+
+  const { id } = await params
+
+  await prisma.task.delete({
+    where: {
+      id,
+    },
+  })
+
+  return NextResponse.json({
+    success: true,
+  })
+}

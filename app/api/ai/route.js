@@ -73,7 +73,7 @@ ${text}
 `
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -93,7 +93,32 @@ ${text}
       }
     )
 
-    const data = await response.json()
+    // const data = await response.json()
+
+    const responseText = await response.text()
+
+console.log("RAW RESPONSE:")
+console.log(responseText)
+
+let data
+
+try {
+  data = JSON.parse(responseText)
+} catch (error) {
+
+  console.error("RESPONSE JSON ERROR")
+  console.error(responseText)
+
+  return NextResponse.json(
+    {
+      error: "Invalid response from Gemini",
+      rawResponse: responseText,
+    },
+    {
+      status: 500,
+    }
+  )
+}
 
     if (response.status === 503) {
 
