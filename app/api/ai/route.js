@@ -2,86 +2,189 @@ import { verifyToken } from "../../../lib/auth"
 import { NextResponse } from "next/server"
 
 export async function POST(request) {
-
   try {
 
     const authHeader = request.headers.get("authorization")
     const token = authHeader?.split(" ")[1]
+
     const decoded = verifyToken(token)
 
     if (!decoded) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
     }
 
     const body = await request.json()
     const { text } = body
 
     if (!text) {
-      return NextResponse.json({ error: "Text is required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Text is required" },
+        { status: 400 }
+      )
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "system",
-            content: `Você é um assistente de produtividade. O usuário vai te mandar um texto livre com tarefas misturadas.
-Sua função é interpretar esse texto e devolver uma lista de tarefas organizadas em JSON.
+    console.log(
+      "GEMINI KEY EXISTS:",
+      !!process.env.GEMINI_API_KEY
+    )
+
+    const prompt = `
+Você é um assistente de produtividade.
+
+O usuário vai enviar tarefas misturadas em texto livre.
+
+Transforme esse texto em um JSON válido.
 
 Regras:
-- Extraia cada tarefa individualmente do texto
-- Para cada tarefa defina:
-  - "originalText": o texto da tarefa como o usuário escreveu
-  - "normalizedText": versão limpa e clara da tarefa
-  - "category": categoria da tarefa. Use uma dessas: "estudo", "trabalho", "pessoal", "saude", "financeiro", "outro"
-  - "priority": prioridade numérica. 1 = alta, 2 = média, 3 = baixa
-  - "estimatedMinutes": tempo estimado em minutos para completar a tarefa (número inteiro)
-  - "order": posição sugerida de execução (1 = fazer primeiro)
 
-Responda APENAS com um JSON válido, sem texto extra, sem markdown, sem explicações.
-Formato esperado:
+- Extraia cada tarefa individualmente
+- Retorne APENAS JSON
+- Não use markdown
+- Não use blocos de código
+- Não escreva explicações
+
+Formato:
+
 [
   {
     "originalText": "...",
     "normalizedText": "...",
-    "category": "...",
+    "category": "estudo",
     "priority": 1,
     "estimatedMinutes": 30,
     "order": 1
   }
-]`,
-          },
-          {
-            role: "user",
-            content: text,
-          },
-        ],
-      }),
-    })
+]
 
-    const aiData = await response.json()
+Categorias permitidas:
+- estudo
+- trabalho
+- pessoal
+- saude
+- financeiro
+- outro
 
-    const rawText = aiData.choices?.[0]?.message?.content
+Texto do usuário:
 
-    if (!rawText) {
-      return NextResponse.json({ error: "AI did not return a response" }, { status: 500 })
+${text}
+`
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (response.status === 503) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Gemini está sobrecarregado. Tente novamente em alguns segundos."
+        },
+        {
+          status: 503
+        }
+      )
     }
 
-    const tasks = JSON.parse(rawText)
+    console.log("GEMINI STATUS:", response.status)
 
-    return NextResponse.json({ tasks })
+    console.log(
+      "GEMINI RESPONSE:",
+      JSON.stringify(data, null, 2)
+    )
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error: data,
+        },
+        {
+          status: response.status,
+        }
+      )
+    }
+
+    const rawText =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!rawText) {
+      return NextResponse.json(
+        {
+          error: "Gemini returned empty response",
+          data,
+        },
+        {
+          status: 500,
+        }
+      )
+    }
+
+    console.log("RAW TEXT:")
+    console.log(rawText)
+
+    const clean = rawText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim()
+
+    let tasks
+
+    try {
+      tasks = JSON.parse(clean)
+    } catch (error) {
+
+      console.error("JSON PARSE ERROR")
+      console.error(clean)
+
+      return NextResponse.json(
+        {
+          error: "Invalid JSON returned by Gemini",
+          rawText: clean,
+        },
+        {
+          status: 500,
+        }
+      )
+    }
+
+    return NextResponse.json({
+      tasks,
+    })
 
   } catch (error) {
 
-    console.error("AI route error:", error)
+    console.error("AI ROUTE ERROR:")
+    console.error(error)
 
-    return NextResponse.json({ error: "Internal error" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: error.message,
+      },
+      {
+        status: 500,
+      }
+    )
   }
 }
