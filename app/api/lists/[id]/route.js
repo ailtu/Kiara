@@ -1,8 +1,9 @@
 import { prisma } from "../../../../lib/prisma"
-
 import { NextResponse } from "next/server"
 
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
+
+    const params = await context.params
 
     try {
 
@@ -24,17 +25,28 @@ export async function PUT(request, { params }) {
 
         console.log(error)
 
-        return NextResponse.json({
-            error: "Internal error",
-        }, {
-            status: 500,
-        })
+        return NextResponse.json(
+            {
+                error: "Internal error",
+            },
+            {
+                status: 500,
+            }
+        )
     }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
+
+    const params = await context.params
 
     try {
+
+        await prisma.task.deleteMany({
+            where: {
+                listId: params.id,
+            },
+        })
 
         await prisma.list.delete({
             where: {
@@ -50,10 +62,13 @@ export async function DELETE(request, { params }) {
 
         console.log(error)
 
-        return NextResponse.json({
-            error: "Internal error",
-        }, {
-            status: 500,
-        })
+        return NextResponse.json(
+            {
+                error: "Internal error",
+            },
+            {
+                status: 500,
+            }
+        )
     }
 }
