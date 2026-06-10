@@ -65,7 +65,7 @@ Categorias permitidas:
 - pessoal
 - saude
 - financeiro
-- outro
+- diversos
 
 Texto do usuário:
 

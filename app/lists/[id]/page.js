@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-
-// import { use } from "react"
 import { api } from "../../../services/api"
 
 const PRIORITY_LABEL = { 1: "Alta", 2: "Média", 3: "Baixa" }
@@ -12,6 +10,7 @@ const PRIORITY_COLOR = {
   2: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
   3: "bg-zinc-700 text-zinc-400 border border-zinc-600",
 }
+
 const CATEGORY_COLOR = {
   estudo: "bg-blue-500/20 text-blue-400",
   trabalho: "bg-purple-500/20 text-purple-400",
@@ -22,9 +21,6 @@ const CATEGORY_COLOR = {
 }
 
 export default function ListPage({ params }) {
-
-  //const resolvedParams = use(params)
-  //const listId = resolvedParams.id
 
   const { id: listId } = useParams()
 
@@ -38,9 +34,17 @@ export default function ListPage({ params }) {
   const [aiPreview, setAiPreview] = useState(null)
   const [aiMode, setAiMode] = useState(false)
 
+  const [savingAiTasks, setSavingAiTasks] = useState(false)
+
   async function loadTasks() {
+
     const data = await api(`/tasks/${listId}`)
-    setTasks(data)
+
+    const sorted = [...data].sort((a, b) => {
+      return (a.priority ?? 99) - (b.priority ?? 99)
+    })
+
+    setTasks(sorted)
   }
 
   async function createTask() {
@@ -54,21 +58,31 @@ export default function ListPage({ params }) {
   }
 
   async function toggleTask(id) {
-    await api(`/tasks/${id}/toggle`, { method: "PATCH" })
+    await api(`/tasks/task/${id}`, {
+      method: "PATCH",
+    })
+
     loadTasks()
   }
 
   async function deleteTask(id) {
-    await api(`/tasks/${id}`, { method: "DELETE" })
+    await api(`/tasks/task/${id}`, {
+      method: "DELETE",
+    })
+
     loadTasks()
   }
 
   async function updateTask(id) {
-    await api(`/tasks/${id}`, {
+    await api(`/tasks/task/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ originalText: editingText }),
+      body: JSON.stringify({
+        originalText: editingText,
+      }),
     })
+
     setEditingId(null)
+
     loadTasks()
   }
 
@@ -82,7 +96,11 @@ export default function ListPage({ params }) {
         body: JSON.stringify({ text: aiText }),
       })
       if (data.tasks) {
-        const sorted = [...data.tasks].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+
+        const sorted = [...data.tasks].sort((a, b) => {
+          return (a.priority ?? 99) - (b.priority ?? 99)
+        })
+
         setAiPreview(sorted)
       } else {
         alert("A IA não conseguiu processar o texto. Tente novamente.")
@@ -95,23 +113,44 @@ export default function ListPage({ params }) {
   }
 
   async function handleConfirmAiTasks() {
-    if (!aiPreview) return
-    for (const task of aiPreview) {
-      await api("/tasks", {
-        method: "POST",
-        body: JSON.stringify({
-          originalText: task.originalText,
-          normalizedText: task.normalizedText,
-          listId,
-          priority: task.priority,
-          estimatedMinutes: task.estimatedMinutes,
-        }),
-      })
+
+    if (!aiPreview || savingAiTasks) return
+
+    setSavingAiTasks(true)
+
+    try {
+
+      for (const task of aiPreview) {
+
+        await api("/tasks", {
+          method: "POST",
+          body: JSON.stringify({
+            originalText: task.originalText,
+            normalizedText: task.normalizedText,
+            listId,
+            priority: task.priority,
+            estimatedMinutes: task.estimatedMinutes,
+          }),
+        })
+
+      }
+
+      setAiPreview(null)
+      setAiText("")
+      setAiMode(false)
+
+      await loadTasks()
+
+    } catch (error) {
+
+      console.error(error)
+      alert("Erro ao salvar tarefas.")
+
+    } finally {
+
+      setSavingAiTasks(false)
+
     }
-    setAiPreview(null)
-    setAiText("")
-    setAiMode(false)
-    loadTasks()
   }
 
   useEffect(() => { loadTasks() }, [])
@@ -120,7 +159,6 @@ export default function ListPage({ params }) {
     <main className="min-h-screen bg-zinc-950 text-white p-6 md:p-10">
       <div className="max-w-5xl mx-auto space-y-8">
 
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-5xl font-bold">Tarefas</h1>
           <button
@@ -132,13 +170,12 @@ export default function ListPage({ params }) {
           </button>
         </div>
 
-        {/* Modo IA */}
         {aiMode && (
           <div className="bg-zinc-900 border border-violet-500/40 rounded-3xl p-6 space-y-4">
             <div>
               <p className="text-violet-400 font-semibold mb-1">✦ Modo IA</p>
               <p className="text-zinc-400 text-sm">
-                Escreva suas tarefas em texto livre. A IA organiza com prioridade, categoria, tempo estimado e ordem de execução.
+                Escreva suas tarefas em texto livre. Kiara organiza com prioridade, categoria, tempo estimado e ordem de execução.
               </p>
             </div>
 
@@ -158,11 +195,10 @@ export default function ListPage({ params }) {
               {aiLoading ? "Organizando..." : "✦ Organizar tarefas"}
             </button>
 
-            {/* Preview */}
             {aiPreview && (
               <div className="space-y-4 pt-2">
                 <p className="text-zinc-400 text-sm">
-                  A IA sugeriu <span className="text-white font-semibold">{aiPreview.length} tarefas</span>. Confirme para adicionar:
+                  Kiara sugeriu <span className="text-white font-semibold">{aiPreview.length} tarefas</span>. Confirme para adicionar:
                 </p>
 
                 {aiPreview.map((task, i) => (
@@ -193,9 +229,12 @@ export default function ListPage({ params }) {
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={handleConfirmAiTasks}
-                    className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-2xl font-semibold transition"
+                    disabled={savingAiTasks}
+                    className="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-6 py-3 rounded-2xl font-semibold transition"
                   >
-                    Confirmar e adicionar
+                    {savingAiTasks
+                      ? "Salvando..."
+                      : "Confirmar e adicionar"}
                   </button>
                   <button
                     onClick={() => setAiPreview(null)}
@@ -209,7 +248,6 @@ export default function ListPage({ params }) {
           </div>
         )}
 
-        {/* Adicionar tarefa manual */}
         {!aiMode && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4">
             <input
@@ -229,7 +267,6 @@ export default function ListPage({ params }) {
           </div>
         )}
 
-        {/* Lista de tarefas */}
         <div className="space-y-4">
           {tasks.map((task) => (
             <div key={task.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
@@ -259,7 +296,7 @@ export default function ListPage({ params }) {
                       onClick={() => toggleTask(task.id)}
                       className={`px-5 py-3 rounded-2xl ${task.completed ? "bg-green-500" : "bg-zinc-800"}`}
                     >
-                      {task.completed ? "Completed" : "Pending"}
+                      {task.completed ? "Finalizado" : "Pendente"}
                     </button>
                   </div>
 
@@ -279,12 +316,6 @@ export default function ListPage({ params }) {
                   )}
 
                   <div className="flex gap-4">
-                    <button
-                      onClick={() => { setEditingId(task.id); setEditingText(task.originalText) }}
-                      className="bg-zinc-800 px-5 py-3 rounded-2xl"
-                    >
-                      Editar
-                    </button>
                     <button
                       onClick={() => deleteTask(task.id)}
                       className="bg-red-500 px-5 py-3 rounded-2xl"
