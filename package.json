@@ -9,11 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.3",
+    "@libsql/client": "^0.17.3",
+    "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",
     "next": "16.2.6",
-    "prisma": "^6.19.3",
+    "prisma": "^6.19.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
